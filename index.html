@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <style>
+        canvas{
+            background-color : #ddd;
+        }
+        div{
+            background-color : #000;
+            opacity : 0.8;
+            width : 300px;
+            height : 550px;
+            position : absolute;
+            text-align : center;
+            transform : scale(1);
+            transition : all .5s;
+        }
+        div > h4{
+            line-height : 500px;
+        }
+        div a{
+            text-decoration: none;
+            color : #fff;
+        }
+        .hide{
+            transform : scale(0);
+        }
+        .show{
+            transform : scale(1);
+        }
+    </style>
+</head>
+<body>
+    <div class="div_2">
+        <h4><a href="">开始游戏</a></h4>
+    </div>
+    <canvas width="300px" height="550px"></canvas>
+    </div>
+    <script>
+        var div = document.getElementsByClassName('div_2')[0];
+        var play = document.getElementsByTagName('a')[0];
+        var canvas = document.getElementsByTagName('canvas')[0];
+        var height = parseInt(window.getComputedStyle(canvas).height);
+        var width = parseInt(window.getComputedStyle(canvas).width);
+        var ctx=canvas.getContext("2d");
+        play.onclick = function(e){
+            e.preventDefault();
+            div.className = 'hide';
+            my_one.intr();
+            my_qiu.intr();
+            my_qiu.move(1,1);
+            document.addEventListener('keydown' , function(e){
+                e = e.keyCode;
+                //console.log(e);
+                switch(e){
+                    case 39 : my_one.right();break;
+                    case 37 : my_one.left();break;
+                    //case 32 : my_qiu.move();break;
+                }
+            })
+        }
+        //制作玩家角色板子
+        var my_one = {
+            width : 60 ,
+            height : 1 ,
+            x : 120 ,
+            y : 540 ,
+            ox : 120 ,
+            v : 3 ,
+            time : null ,
+            n : 10 ,
+            intr : function(x){
+                this.x >= width - this.width && (this.x = width - this.width);
+                this.x <= 1 && (this.x = 1);
+                ctx.clearRect(this.ox,this.y,this.width,this.height);
+                ctx.fillRect(this.x,this.y,this.width,this.height);
+                this.ox = this.x;
+            } ,
+            right : function(){
+                clearInterval(this.time);
+                this.time = null;
+                this.time = setInterval(()=>{
+                    this.intr(this.x += this.v);
+                } , this.n)
+            } ,
+            left : function(){
+                clearInterval(this.time);
+                this.time = null;
+                this.time = setInterval(()=>{
+                    this.intr(this.x -= this.v);
+                } , this.n)
+            },
+        }
+        //绘制板砖
+        my_b = {
+            width : 30,
+            height : 15,
+            intr : function(x , y){
+                ctx.fillRect(x,y,this.width,this.height);
+                ctx.fillStyle='#000';
+            } ,
+            remove : function(x , y){
+                ctx.clearRect(x,y,this.width,this.height);
+            }
+        }
+        var arr = [];
+        for(let x = 10,i=0;x < height / 2 + my_b.height;x += my_b.height + 1,i++){
+            arr.push([]);
+            for(let y = 10,j=0;y < width - my_b.width;y += my_b.width + 1,j++){
+                var a = Math.floor(Math.random()*9 + 1);
+                arr[i].push([x,y]);
+                a < arr[i].length && (arr[i][a] = null);
+            }
+        }
+        for(let i=0;i<arr.length;i++){
+            for(let j=0;j<arr[i].length;j++){
+                Array.isArray(arr[i][j]) && my_b.intr(arr[i][j][1],arr[i][j][0])
+            }
+        }
+        //my_b.intr(41,266,30,15);
+        //绘制球
+        my_qiu = {
+            x : 150 ,
+            y : 535 ,
+            ox : 145 ,
+            oy : 530 ,
+            r : 2 ,
+            time : null ,
+            n : 10 ,
+            vx : 2 ,
+            vy : 2 ,
+            bool : false ,
+            intr : function(){
+                ctx.clearRect(this.ox,this.oy,this.r * 2 ,this.r * 2);
+                ctx.beginPath();
+                ctx.arc(this.x,this.y,this.r,0,360*Math.PI / 180);
+                ctx.fill();
+                ctx.closePath();
+                this.ox = this.x - this.r;
+                this.oy = this.y - this.r;
+            } ,
+            move : function(x,y){
+                this.time = setInterval(()=>{
+                    if(this.y < this.r + Math.abs(this.vy)){
+                        this.vy = -this.vy;
+                    }
+                    if(this.x < 0 + this.r + Math.abs(this.vx)){
+                        this.vx = -this.vx;
+                    }
+                    if(this.x > width - this.r - Math.abs(this.vx)){
+                        this.vx = -this.vx;
+                    }
+                    if(this.y > my_one.y - this.r - Math.abs(this.vy)&& (this.x > my_one.x && this.x < my_one.x + my_one.width)){
+                        this.vy = -this.vy;
+                    }
+                    if(this.y > height){
+                        div.querySelector('a').innerHTML = 'Game Over';
+                        div.className = 'show';
+                        clearInterval(this.time);
+                        clearInterval(my_one.time);
+                    }
+                    this.x = this.x - x * this.vx;
+                    this.y = this.y - y * this.vy;
+                    for(let i=0;i<arr.length;i++){
+                        for(let j=0;j<arr[i].length;j++){
+                            if(Array.isArray(arr[i][j])){
+                                var x1 = arr[i][j][1];
+                                var x2 = arr[i][j][1] + my_b.width;
+                                var y1 = arr[i][j][0];
+                                var y2 = arr[i][j][0] + my_b.height;
+                                 if((this.x < x2+ Math.abs(this.vx) && this.x > x1 - Math.abs(this.vx)) && (this.y < y2+ Math.abs(this.vx) && this.y > y1 - Math.abs(this.vx))){
+                                     arr[i][j] = null;
+                                    my_b.remove(x1,y1);
+                                    x1 -= Math.abs(this.vx);
+                                    x2 += Math.abs(this.vx);
+                                    y1 -= Math.abs(this.vy);
+                                    y2 += Math.abs(this.vy);
+                                    if((this.x < x2 && this.x > x1) && this.y < y2)
+                                        this.vy = -this.vy;
+                                    else if((this.x < x2 && this.x > x1) && this.y > y1)
+                                        this.vy = -this.vy;
+                                    else if((this.y < y2 && this.y > y1) && this.x > x1)
+                                        this.vx = -this.vx;
+                                    else if((this.y < y2 && this.y > y1) && this.x < x2)
+                                        this.vx = -this.vx;
+                                }
+                            }
+                        }
+                    }
+                    this.intr();
+                } , this.n)
+            }
+        }
+
+    </script>
+</body>
+</html>
